@@ -1,0 +1,40 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: adagent
+      CLICKHOUSE_USER: adagent
+      CLICKHOUSE_PASSWORD: adagent
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: adagent
+      POSTGRES_USER: adagent
+      POSTGRES_PASSWORD: adagent
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adagent -d adagent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  clickhouse_data:
+  postgres_data:

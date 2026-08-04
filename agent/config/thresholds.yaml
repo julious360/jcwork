@@ -1,0 +1,40 @@
+# Decision thresholds and the guardrails around them.
+#
+# The four numbers at the top are the rules. Everything under "Guardrails" is what
+# keeps those rules from destroying the account: a raw "pause if CPA > max" check
+# fires on statistical noise and on revenue that simply hasn't landed yet.
+
+check_interval_hours: 6
+
+# ── Rules ─────────────────────────────────────────────────────────────────────
+target_cpa: 60.0      # what you want to pay for a customer
+cpa_max: 90.0         # pause above this
+roas_min: 1.2         # pause below this
+roas_scale: 2.5       # scale above this
+
+# ── Guardrails ────────────────────────────────────────────────────────────────
+min_spend_multiple: 3.0        # no pause until spend >= 3 x target_cpa
+min_impressions: 1000
+confidence_level: 0.90         # pause only if the upper CPA bound still breaches
+learning_phase_conversions: 50 # Meta's learning phase; don't optimise inside it
+max_budget_increase_pct: 20.0  # per scale step
+scale_cooldown_hours: 24
+
+# ── Blast radius ──────────────────────────────────────────────────────────────
+max_actions_per_run: 10
+max_actions_per_day: 40
+human_approval_spend_threshold: 500.0
+kill_switch: false             # set true to freeze all writes immediately
+
+# ── Anti-entropy ──────────────────────────────────────────────────────────────
+novelty_threshold: 0.88        # reject concepts more similar than this to recent ones
+novelty_history_size: 50
+exploration_pct: 20.0          # min share of spend on externally-seeded concepts
+
+# ── Attribution ───────────────────────────────────────────────────────────────
+attribution:
+  model: last_non_direct_click
+  lookback_days: 7
+  lag_hours: 48                # exclude the trailing window; revenue lands late
+  net_of_refunds: true
+  reporting_currency: USD

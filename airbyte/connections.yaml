@@ -1,0 +1,138 @@
+# Airbyte pipeline as code.
+#
+# Checked in so the pipeline is reproducible and reviewable rather than
+# click-configured in a UI. Apply with the Airbyte API or Terraform provider;
+# secrets come from environment variables and are never stored here.
+#
+# The agent reads everything it knows about performance from the ClickHouse tables
+# these connections populate. It never calls the Marketing API to read.
+
+destination:
+  name: clickhouse-adagent
+  definition: clickhouse
+  # Destination connector v2.x: full refresh + incremental append/dedupe.
+  configuration:
+    host: ${ADAGENT_CLICKHOUSE__HOST}
+    port: 8123
+    database: ${ADAGENT_CLICKHOUSE__DATABASE}
+    username: ${ADAGENT_CLICKHOUSE__USER}
+    password: ${ADAGENT_CLICKHOUSE__PASSWORD}
+    ssl: ${ADAGENT_CLICKHOUSE__SECURE}
+
+sources:
+  - name: facebook-marketing
+    definition: facebook-marketing
+    configuration:
+      account_ids: ["${ADAGENT_META__AD_ACCOUNT_ID}"]
+      access_token: ${ADAGENT_META__ACCESS_TOKEN}
+      start_date: "2026-01-01T00:00:00Z"
+      # Meta removed 7d/28d view-through windows from ads_insights in Jan 2026.
+      # Click-based windows only; warehouse-side attribution does the real work.
+      action_breakdowns_action_type: ["offsite_conversion"]
+      insights_lookback_window: 28
+    streams:
+      - name: ads_insights
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        cursor_field: [date_start]
+        primary_key: [[ad_id], [date_start]]
+      - name: ads
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: ad_sets
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: campaigns
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: ad_creatives
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+    schedule:
+      # Hourly. This is Airbyte's quota to spend, not the agent's — and it is why
+      # the agent itself never needs to poll Meta for performance data.
+      cron: "0 * * * *"
+
+  - name: google-analytics-4
+    definition: google-analytics-data-api
+    configuration:
+      property_ids: ["${GA4_PROPERTY_ID}"]
+      credentials_json: ${GA4_CREDENTIALS_JSON}
+      date_ranges_start_date: "2026-01-01"
+      custom_reports_array:
+        # utm_content carries the ad_id we stamp at publish time. This is the hop
+        # that makes ad -> revenue attribution possible without a Marketing API read.
+        - name: sessions_with_click_ids
+          dimensions: [sessionSource, sessionMedium, sessionManualAdContent, landingPage, date]
+          metrics: [sessions, newUsers, conversions]
+    streams:
+      - name: sessions_with_click_ids
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+    schedule:
+      cron: "15 * * * *"
+
+  - name: hubspot
+    definition: hubspot
+    configuration:
+      credentials:
+        credentials_title: "Private App Credentials"
+        access_token: ${HUBSPOT_ACCESS_TOKEN}
+      start_date: "2026-01-01T00:00:00Z"
+    streams:
+      - name: contacts
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: deals
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+    schedule:
+      cron: "30 * * * *"
+
+  - name: stripe
+    definition: stripe
+    configuration:
+      account_id: ${STRIPE_ACCOUNT_ID}
+      client_secret: ${STRIPE_API_KEY}
+      start_date: "2026-01-01T00:00:00Z"
+      # Stripe is the only source of truth for revenue. Refunds must be synced or
+      # ROAS overstates every winning ad.
+      lookback_window_days: 7
+    streams:
+      - name: charges
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: invoices
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: subscriptions
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: refunds
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+      - name: customers
+        sync_mode: incremental
+        destination_sync_mode: append_dedup
+        primary_key: [[id]]
+    schedule:
+      cron: "45 * * * *"
+
+# ── Post-sync mapping ─────────────────────────────────────────────────────────
+# Airbyte lands raw streams under its own naming. Map them into the tables in
+# migrations/clickhouse/001_dimensions.sql with stg_ views, then run:
+#
+#   adagent loop            (rebuilds bridge_click_identity and mart_ad_economics)
+#
+# PII note: email_sha256 columns expect a SHA-256 hash, never a raw address. Hash
+# in the staging view, not downstream.

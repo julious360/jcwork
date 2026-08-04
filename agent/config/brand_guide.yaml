@@ -1,0 +1,46 @@
+# Brand constraints for generated creative.
+#
+# Split by design: the fields above "Judged by a vision model" are checked in code
+# against real pixels and file metadata. Asking an LLM whether an image is 1080px
+# wide or whether a hex code is in range is slower, costlier, and less reliable
+# than measuring it.
+
+palette:
+  - name: ink
+    hex: "#101828"
+  - name: primary
+    hex: "#2E5BFF"
+  - name: accent
+    hex: "#FFB020"
+  - name: paper
+    hex: "#F7F8FA"
+
+max_delta_e: 12.0              # CIE76; ~2.3 is a just-noticeable difference
+min_palette_coverage_pct: 25.0 # at least this share of pixels must be on-palette
+
+fonts:
+  - Inter
+  - Inter Tight
+
+# ── Meta ad spec (checked deterministically) ──────────────────────────────────
+allowed_aspect_ratios: [1.0, 0.8, 0.5625]   # 1:1, 4:5, 9:16
+aspect_ratio_tolerance: 0.02
+min_width: 1080
+max_file_size_mb: 30.0
+max_text_coverage_pct: 20.0
+
+# ── Judged by a vision model ──────────────────────────────────────────────────
+tone: >
+  Confident and plain-spoken. Concrete over clever. No hype, no exclamation marks,
+  no stock-photo handshakes. Generous whitespace, one clear focal point.
+
+logo_rules: >
+  Logo sits in a corner with clear space of at least its own cap-height on every
+  side. Never stretched, rotated, recoloured, or placed over a busy area.
+
+forbidden_claims:
+  - "guaranteed"
+  - "#1"
+  - "best in the world"
+  - "risk-free"
+  - "instantly"

@@ -1,0 +1,41 @@
+{
+  "_comment": "Offline fixture for MockResearchProvider. Bodies are templated with {category} so the mock path stays category-agnostic and never hardcodes a vertical.",
+  "documents": [
+    {
+      "url": "https://example.com/thread/1",
+      "title": "Anyone else drowning in status update requests?",
+      "score": 412,
+      "body": "I spend the first two hours of every day answering 'where are we on this?' emails. By the time I actually start working it's lunch. We tried {category} and it just became another place nobody checks. The problem isn't the tool, it's that clients want reassurance and I'm the only one who can give it. I've started dreading Monday mornings."
+    },
+    {
+      "url": "https://example.com/thread/2",
+      "title": "Lost a retainer because we missed a deadline nobody told me about",
+      "score": 388,
+      "body": "Client swore they sent approval two weeks ago. It was buried in a Slack thread. We missed the launch, they walked, and that was 30% of monthly revenue gone. Every tool for {category} I've looked at assumes everyone actually updates their tasks. Nobody does. I need something that tells me what's about to go wrong before it does, not a prettier list."
+    },
+    {
+      "url": "https://example.com/thread/3",
+      "title": "How do you actually know if a project made money?",
+      "score": 356,
+      "body": "We bill fixed fee. I genuinely cannot tell you which of our projects were profitable last quarter. Time tracking is a nightmare because nobody logs hours honestly, and by the time I reconcile it the quarter is over. I suspect two of our biggest clients are actually losing us money and I have no way to prove it. Every {category} option shows me tasks, not margin."
+    },
+    {
+      "url": "https://example.com/thread/4",
+      "title": "Onboarding a new PM takes three months and I don't have three months",
+      "score": 291,
+      "body": "Every project lives in a different structure because whoever set it up did it their way. New hires spend weeks just figuring out where things are. We looked at {category} but migrating years of scattered history felt impossible so we never started. Now it's worse."
+    },
+    {
+      "url": "https://example.com/thread/5",
+      "title": "Approval chains are killing us",
+      "score": 274,
+      "body": "Three rounds of revisions is in the contract. We routinely do seven because there's no record of who approved what. Clients genuinely don't remember signing off. I've started screenshotting everything, which is insane in {category}. I want a paper trail that a client can't argue with, and I want it without adding another login for them."
+    },
+    {
+      "url": "https://example.com/thread/6",
+      "title": "Context switching is destroying my team",
+      "score": 203,
+      "body": "Designers are on four projects at once and every switch costs them half an hour of ramp-up. Utilisation looks fine on paper, output is terrible. None of the {category} tools model the cost of switching, they just show capacity as if hours are interchangeable. They aren't."
+    }
+  ]
+}

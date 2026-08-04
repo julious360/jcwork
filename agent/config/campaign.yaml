@@ -1,0 +1,37 @@
+# The vertical the agent is pointed at. Swap this file, keep the agent.
+# Nothing product-specific is compiled into the codebase; this is the only place
+# the category, ICP, and research seeds are declared.
+#
+# The values below are a worked EXAMPLE. Replace them with your own.
+
+product_category: "project management software for creative agencies"
+product_name: "Acme Studio"
+value_proposition: >
+  Ship client work on time without drowning in status meetings — one workspace for
+  briefs, approvals, and billable hours.
+icp_description: >
+  Owners and operations leads at 5-50 person creative or marketing agencies who bill
+  by project or retainer and currently run on a mix of spreadsheets and chat.
+landing_page_url: "https://example.com/lp/agency-pm"
+currency: "USD"
+
+# ── Research seeds ────────────────────────────────────────────────────────────
+# Where the research layer looks for unfiltered statements of pain.
+research_subreddits:
+  - agency
+  - marketing
+  - freelance
+  - projectmanagement
+
+research_queries:
+  - "why creative agencies miss client deadlines"
+  - "agency owners complaints about project management tools"
+  - "biggest frustrations running a small marketing agency"
+
+# ── Anti-entropy sources ──────────────────────────────────────────────────────
+# External DNA. Without these the agent recycles its own past winners until they decay.
+competitor_pages: []          # Facebook Page IDs to pull from the Ad Library
+youtube_channels: []          # Channel IDs whose transcripts carry customer language
+podcast_feeds: []             # RSS URLs
+
+top_pain_points: 3

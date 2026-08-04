@@ -1,0 +1,28 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "adagent worker",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10,
+    "numReplicas": 1
+  },
+  "_comment": [
+    "Railway reads one service from this file. Deploy two services from the same",
+    "repo and override the start command on the second:",
+    "",
+    "  worker     -> adagent worker      (drains the job queue)",
+    "  scheduler  -> adagent scheduler   (enqueues the recurring loop)",
+    "",
+    "Add Railway Postgres and set ADAGENT_POSTGRES__DSN from its DATABASE_URL.",
+    "Point ADAGENT_CLICKHOUSE__* at ClickHouse Cloud and set SECURE=true.",
+    "",
+    "Run migrations once after the first deploy:  railway run adagent db migrate",
+    "",
+    "Keep ADAGENT_META__DRY_RUN=true until you have reviewed a full week of",
+    "proposed actions with 'adagent actions'."
+  ]
+}
