@@ -192,14 +192,100 @@ in is a constructor change.
   reachable. It reliably catches near-duplicates; it is weaker at deep semantic
   similarity.
 
-## Tests
+## Testing
+
+Five tiers, cheapest first. Each one buys a different kind of confidence, and you can
+stop at any of them.
+
+### 1. Offline — no setup, no credentials, no databases
 
 ```bash
-pytest            # 120 tests, no network, no credentials, no databases
+pytest                              # 132 tests, ~2s
 ruff check agent tests && mypy agent
 ```
 
-The suite covers four canonical loop scenarios — a clear loser, a clear winner, an
-under-sampled ad, and one whose revenue hasn't matured — and asserts the last two are
-left untouched. It also parses every migration and runtime query with `sqlglot` in the
-right dialect, so SQL errors surface in CI rather than at deploy.
+Covers the decision rules and every guardrail, the rate governor (including simulated
+throttle headers and Meta's `estimated_time_to_regain_access`), brand validation
+against real generated PNGs, novelty gating, dry-run and idempotency behaviour, and
+the write-only constraint. Every migration and runtime query is parsed with `sqlglot`
+in the correct dialect, so SQL errors surface here rather than at deploy.
+
+```bash
+pytest tests/test_meta_write_only.py -v   # the constraint that protects the account
+pytest tests/test_decision_rules.py -v    # the guardrails that protect the budget
+```
+
+### 2. Local databases — the warehouse path end to end
+
+This is the tier that proves attribution actually works.
+
+```bash
+docker compose up -d
+adagent db migrate
+adagent seed        # synthetic ads: a loser, a winner, an under-sampled ad, an immature one
+adagent verify      # runs the real loop and checks it reached the right conclusions
+```
+
+`verify` exercises the full chain — migrations, identity spine, attribution SQL, mart
+refresh, decision engine — and prints a pass/fail line per scenario. Revenue is seeded
+through the *whole* path (session → contact → Stripe customer), not written into the
+mart, so a broken join surfaces as a wrong decision rather than passing quietly.
+
+Expected output:
+
+```
+PASS  ad_loser       expected pause_ad       got pause_ad
+PASS  ad_winner      expected scale_budget   got scale_budget
+PASS  ad_young       expected no_op          got no_op
+PASS  ad_immature    expected no_op          got no_op
+```
+
+The last two are the ones worth watching. A naive threshold check pauses both.
+
+Then inspect what it saw and why:
+
+```bash
+adagent economics    # the warehouse view the engine reads
+adagent actions      # the ledger, with the reasoning behind each decision
+```
+
+### 3. With LLM keys — real research and creative
+
+Set `ADAGENT_LLM__ANTHROPIC_API_KEY` and `ADAGENT_LLM__GEMINI_API_KEY`:
+
+```bash
+adagent doctor       # confirms the paths flipped from mock to live
+adagent research     # real ranked pain points from real sources
+adagent creative     # real images, really brand-validated
+```
+
+Costs cents. Check the generated files in `artifacts/` and read the ranked JSON —
+this is the tier where you judge output *quality*, which no assertion can do for you.
+
+### 4. With Meta credentials, still dry-run — the real proving ground
+
+Point Airbyte at your accounts, keep `ADAGENT_META__DRY_RUN=true`, and let the
+scheduler run for a week against live data. The agent decides and records but never
+calls Meta.
+
+```bash
+adagent actions --days 7
+```
+
+Read every decision against what you would have done. **This is the tier that
+matters** — it is the only way to find out whether your thresholds are right for your
+account before they cost anything. Nothing else substitutes for it.
+
+### 5. Live — smallest budget you can tolerate
+
+Set `dry_run=false` on one low-spend campaign. Keep `max_actions_per_day` low and
+`human_approval_spend_threshold` low so you see decisions before they land. Flip
+`kill_switch: true` in `thresholds.yaml` to freeze everything instantly.
+
+### What the tests deliberately do not cover
+
+- **Live vendor calls.** Meta, Perplexity, Reddit, and HeyGen are mocked; contract
+  drift on their side won't be caught here.
+- **Whether the thresholds are right for your account.** Tier 4 is the only answer.
+- **Creative quality.** The validator checks palette, spec, tone, and claims. Whether
+  an ad *works* is a question only spend answers.

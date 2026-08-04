@@ -87,6 +87,63 @@ def config() -> None:
     typer.echo(f"brand:        {len(guide.palette)} colours, ΔE tolerance {guide.max_delta_e}")
 
 
+# ── Verification ──────────────────────────────────────────────────────────────
+
+
+@app.command()
+def seed() -> None:
+    """Load synthetic warehouse data covering the four canonical loop scenarios.
+
+    Nothing here touches Meta, Stripe, or real money. Follow with ``adagent verify``.
+    """
+    from agent.seed import load
+    from agent.warehouse.client import WarehouseClient
+
+    counts = load(WarehouseClient())
+    for table, count in counts.items():
+        typer.echo(f"{table + ':':32} {count:>6} rows")
+    typer.echo("\nnow run: adagent verify")
+
+
+@app.command()
+def verify() -> None:
+    """Run the loop against seeded data and check it reached the right decisions.
+
+    This is the end-to-end proof: migrations applied, the identity spine resolved,
+    attribution SQL credited revenue to the right ad, and the guardrails protected
+    the two ads that must not be touched.
+    """
+    from agent.orchestrator.jobs import JobContext, refresh_warehouse
+    from agent.seed import EXPECTED
+
+    ctx = JobContext.build(get_settings())
+    refresh_warehouse(ctx, {"days": 30, "dry_run": True})
+    ctx.queue.claim()  # drop the chained job; we run the loop inline
+
+    from agent.decision.engine import DecisionEngine, default_lookback
+
+    economics = ctx.queries.load_ad_economics(default_lookback(ctx.thresholds))
+    result = DecisionEngine(ctx.ledger, ctx.thresholds, None).run(economics, dry_run=True)
+    actual = {d.ad_id: str(d.action) for d in result.decisions if d.ad_id}
+
+    typer.echo(f"\nevaluated {result.evaluated} ads\n")
+    failures = 0
+    for ad_id, expected in EXPECTED.items():
+        got = actual.get(ad_id, "MISSING")
+        ok = got == expected
+        failures += 0 if ok else 1
+        typer.echo(f"  {'PASS' if ok else 'FAIL'}  {ad_id:14} expected {expected:14} got {got}")
+
+    typer.echo("")
+    for decision in result.actionable:
+        typer.echo(f"  {decision.ad_id}: {decision.reason}")
+
+    if failures:
+        typer.echo(f"\n{failures} scenario(s) wrong — the warehouse path is broken")
+        raise typer.Exit(1)
+    typer.echo("\nall scenarios correct: warehouse, attribution, and guardrails all work")
+
+
 # ── The loop ──────────────────────────────────────────────────────────────────
 
 
