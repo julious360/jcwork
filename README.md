@@ -57,6 +57,7 @@ adagent creative              # generate + brand-validate ad candidates
 adagent harvest               # pull external DNA into the pool
 adagent loop --dry-run        # decide against real data, write nothing
 adagent actions               # the ledger: what it decided, and why
+adagent audit                 # a client-ready report of the same conclusions
 ```
 
 ## Safety posture
@@ -247,7 +248,14 @@ Then inspect what it saw and why:
 ```bash
 adagent economics    # the warehouse view the engine reads
 adagent actions      # the ledger, with the reasoning behind each decision
+adagent audit        # the same conclusions, written for someone who won't run the CLI
 ```
+
+`adagent audit` is read-only: it evaluates the account through the same `evaluate_ad`
+path the loop uses, but touches neither Meta nor the ledger. A test asserts that its
+waste and scale findings match the engine's own verdicts, because a report that
+recommends something the agent would not do is worse than no report. See
+[`docs/income/sample-audit.md`](docs/income/sample-audit.md) for a full example.
 
 ### 3. With LLM keys — real research and creative
 

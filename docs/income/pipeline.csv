@@ -1,0 +1,4 @@
+company,contact_name,contact_role,source,monthly_spend_est,platform_stack,stage,first_touch,last_touch,touches,next_action,next_action_date,value_usd,notes
+Northwind Supply Co.,,,ad_library,48000,shopify+stripe+klaviyo,researched,,,0,send first touch,,2500,EXAMPLE ROW - delete. Same creative running 90+ days.
+Meridian Labs,,,shopify_reviews,72000,shopify+stripe+hubspot,touched,2026-08-03,2026-08-03,1,follow up with sample report,2026-08-07,2500,EXAMPLE ROW - delete. Left a Triple Whale review about mismatched numbers.
+Kestrel Agency,,,linkedin,180000,multi-client,replied,2026-08-01,2026-08-05,2,book call,2026-08-08,2500,EXAMPLE ROW - delete. 11 clients; white-label angle.

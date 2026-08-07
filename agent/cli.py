@@ -271,6 +271,51 @@ def approve(action_id: Annotated[int, typer.Argument(help="Ledger action id")]) 
 
 
 @app.command()
+def audit(
+    days: Annotated[int, typer.Option(help="Window to review")] = 30,
+    client: Annotated[str, typer.Option(help="Client name for the report header")] = "",
+    output: Annotated[Path | None, typer.Option(help="Write the Markdown report here")] = None,
+) -> None:
+    """Produce a client-ready paid-acquisition audit from the warehouse.
+
+    Read-only: it evaluates the account with the same rules the loop uses, but writes
+    nothing to Meta and records nothing in the ledger. This is the deliverable you can
+    hand over before being granted any access to an ad account.
+
+    Try it against seeded data first: ``adagent seed && adagent audit``.
+    """
+    from agent.audit import build_audit, render_markdown
+    from agent.warehouse.client import WarehouseClient
+    from agent.warehouse.queries import WarehouseQueries
+
+    campaign, thresholds = load_campaign(), load_thresholds()
+    since = date.today() - timedelta(days=days)
+    rows = WarehouseQueries(WarehouseClient()).load_ad_economics(since)
+    if not rows:
+        typer.echo("no ad economics found — run 'adagent loop' or 'adagent seed' first")
+        raise typer.Exit(1)
+
+    report = build_audit(
+        rows,
+        thresholds,
+        window_days=days,
+        client_name=client,
+        currency=campaign.currency,
+    )
+    rendered = render_markdown(report)
+
+    if output:
+        output.write_text(rendered)
+        typer.echo(
+            f"wrote {output}  "
+            f"({report.ads_reviewed} ads, {len(report.findings)} findings, "
+            f"{report.monthly_opportunity:,.0f} {campaign.currency}/mo identified)"
+        )
+    else:
+        typer.echo(rendered)
+
+
+@app.command()
 def economics(days: Annotated[int, typer.Option()] = 14) -> None:
     """Show the warehouse view the decision engine reads."""
     from agent.warehouse.client import WarehouseClient
