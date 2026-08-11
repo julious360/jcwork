@@ -37,18 +37,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -f toolkit/uikit/gate.mjs ] && node toolkit/uikit/gate.mjs || true",
-            "timeout": 60,
-            "statusMessage": "Running pre-handoff gate…"
-          }
-        ]
-      }
     ]
   }
 }
