@@ -1,0 +1,24 @@
+{
+  "name": "@adagent/uikit",
+  "private": true,
+  "version": "0.1.0",
+  "description": "UI/UX verification harness: deterministic screenshots, visual diffing, and a pre-handoff audit gate for static site mockups.",
+  "type": "module",
+  "bin": {
+    "uikit-shoot": "./shoot.mjs",
+    "uikit-diff": "./diff.mjs",
+    "uikit-audit": "./audit.mjs",
+    "uikit-gate": "./gate.mjs"
+  },
+  "scripts": {
+    "shoot": "node shoot.mjs",
+    "diff": "node diff.mjs",
+    "audit": "node audit.mjs",
+    "gate": "node gate.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "^1.56.0",
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0"
+  }
+}
