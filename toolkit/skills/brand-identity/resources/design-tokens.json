@@ -1,0 +1,62 @@
+{
+  "source": "julious360/EW_Studio_Collections_V3.0 html/assets/campaign.css",
+  "extractedAt": "2026-08-11T23:13:00.040Z",
+  "selector": ":root",
+  "tokens": {
+    "color-gold": "#D4AF37",
+    "color-gold-light": "#F0C040",
+    "color-gold-dark": "#9A7D1A",
+    "bg": "#000000",
+    "bg-2": "#0D0D0D",
+    "bg-3": "#111111",
+    "panel": "#0D0D0D",
+    "panel-2": "#111111",
+    "ink": "#FFFFFF",
+    "ink-soft": "#CCCCCC",
+    "ink-mute": "#999999",
+    "line": "#2A2A2A",
+    "accent": {
+      "value": "#D4AF37",
+      "note": "gold (house/base accent)"
+    },
+    "accent-hi": "#F0C040",
+    "gold": "#D4AF37",
+    "ok": "#D4AF37",
+    "radius": "4px",
+    "radius-sharp": "2px",
+    "maxw": "1200px",
+    "display": "\"Tachyon\", \"Trade Gothic Next LT Pro Condensed\", \"Trade Gothic Next LT Pro\", \"Archivo Narrow\", \"Oswald\", \"Helvetica Neue\", Arial, sans-serif",
+    "font": "\"Inter\", \"Helvetica Neue\", system-ui, -apple-system, Arial, sans-serif"
+  },
+  "variants": {
+    "tier-producer": {
+      "acc": "#74a4ff",
+      "acc2": "#3f6dd6",
+      "accent": "var(--acc)",
+      "accent-hi": "var(--acc)",
+      "on-accent": "#0a0a0c",
+      "box": "url(../../links/box-producer.jpg)"
+    },
+    "tier-hollywood": {
+      "acc": "#D4AF37",
+      "acc2": "#9A7D1A",
+      "accent": "var(--acc)",
+      "accent-hi": "var(--acc)",
+      "on-accent": "#15140e",
+      "box": "url(../../links/box-hollywood.jpg)"
+    },
+    "tier-complete": {
+      "acc": "#ec4332",
+      "acc2": "#a51d12",
+      "accent": "var(--acc)",
+      "accent-hi": "var(--acc)",
+      "on-accent": "#fff",
+      "box": "url(../../links/box-complete.jpg)"
+    },
+    "house": {
+      "accent": "#D4AF37",
+      "accent-hi": "#F0C040",
+      "on-accent": "#15140e"
+    }
+  }
+}
