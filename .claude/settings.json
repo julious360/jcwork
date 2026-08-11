@@ -1,0 +1,54 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest*)",
+      "Bash(ruff *)",
+      "Bash(mypy*)",
+      "Bash(adagent *)",
+      "Bash(pip install -e*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .claude/.deps-installed ] || { pip install -e \".[dev]\" >/tmp/adagent-deps-install.log 2>&1 && mkdir -p .claude && touch .claude/.deps-installed && echo \"adagent deps installed\"; } || echo \"adagent dep install failed, see /tmp/adagent-deps-install.log\"",
+            "timeout": 120,
+            "statusMessage": "Installing adagent dev dependencies…"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // .tool_response.filePath // empty'); case \"$f\" in *.py) python3 -m ruff check --fix \"$f\"; case \"$f\" in */agent/*) python3 -m mypy \"$f\" ;; esac ;; esac; true",
+            "timeout": 30,
+            "statusMessage": "Linting and type-checking…"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f toolkit/uikit/gate.mjs ] && node toolkit/uikit/gate.mjs || true",
+            "timeout": 60,
+            "statusMessage": "Running pre-handoff gate…"
+          }
+        ]
+      }
+    ]
+  }
+}

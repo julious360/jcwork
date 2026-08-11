@@ -16,3 +16,5 @@ artifacts/
 *.png
 !tests/**/*.png
 .coverage
+.claude/.deps-installed
+.claude/settings.local.json
