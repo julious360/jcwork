@@ -1,9 +1,27 @@
 ---
 name: ui-verify
-description: Mechanically verify a static HTML/CSS/JS site or mockup before calling it done — deterministic screenshots, visual diffing, and an audit for broken assets, offline-guarantee violations, contrast, and version-stamp mismatches. Use whenever the user asks to check, verify, review, or gate a page/site/mockup, or before reporting any UI change as finished.
+description: Mechanically verify a static HTML/CSS/JS site or mockup before calling it done — deterministic screenshots, visual diffing, and an audit for broken assets, offline-guarantee violations, contrast, and version-stamp mismatches. Also covers the end-of-day pass across a whole repo. Use whenever the user asks to check, verify, review, or gate a page/site/mockup, says a phrase like "verify work now" / "run the daily verification" / "run eod", or before reporting any UI change as finished.
 ---
 
 # UI Verification
+
+## Trigger phrase: "verify work now"
+
+When the user says this (or a close variant — "run eod", "run the daily
+verification", "check today's work") run the end-of-day pass immediately:
+
+```bash
+node toolkit/uikit/eod.mjs .
+```
+
+From the repo root. This is different from `gate.mjs` below — `eod.mjs` is the whole-repo
+daily pass (Python lint/format plus every "site" subdirectory found), auto-fixes what's
+safe as its own local commit, and writes a digest to `toolkit/reports/YYYY-MM-DD.md`.
+**Never `git push` as part of this** — every commit it makes must stay local-only; that's
+a deliberate decision by the repo owner (nothing reaches the remote without his review),
+not a step to "finish" by pushing. Report back what got auto-fixed and what's in the
+digest's "Needs you" section, briefly — a clean run deserves a one-line reply, not a
+full report.
 
 Thin wrapper around `toolkit/uikit/` — the harness that turns "looks right to me" into
 a check that can fail. Don't re-implement screenshot capture or asset-checking by hand

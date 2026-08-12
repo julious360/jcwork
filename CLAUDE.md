@@ -34,6 +34,36 @@ CI runs lint → format-check → mypy → pytest, in that order, as a matrix ac
 "3.11"`). Run the same four locally before pushing — with `python3 -m` — don't rely on
 CI to find what `ruff check --fix` would have caught in a second.
 
+## Trigger phrase: "verify work now"
+
+When the user says this (or a close variant — "run eod", "run the daily verification",
+"check today's work"), run the end-of-day auto-fix + digest pass immediately:
+
+```bash
+node toolkit/uikit/eod.mjs .
+```
+
+This auto-fixes small, safe, reversible issues (ruff lint/format here; version-stamp
+sync, drifted `*-data.js` regeneration, and orphaned-asset removal for any subdirectory
+with its own `VERSION` file) as its own local commit, and writes a digest to
+`toolkit/reports/YYYY-MM-DD.md`. Everything requiring judgment — contrast, visual diffs,
+mypy errors, broken references with no obvious fix — goes to the digest's "Needs you"
+section and is never auto-changed; don't try to fix those yourself either, that's this
+tool's deliberate scope boundary (see the comments at the top of `eod.mjs`), not an
+oversight.
+
+**Never `git push` as part of this.** Every commit `eod.mjs` makes must stay local —
+that's a deliberate decision by the repo owner (nothing reaches the remote without his
+review; he can revert or push any single commit himself later), not a step to "finish"
+by pushing. Report back briefly: what got auto-fixed and what's in "Needs you". A clean
+run deserves a one-line reply, not a full report.
+
+This is documented here rather than only in a skill because this session found the
+live `~/.claude/skills` directory can silently reorganize or drop a newly-created skill
+mid-session (an external sync process moved a fresh skill to `.trash` without any
+action from this session) — `CLAUDE.md`, read at the start of every session in this
+repo, doesn't have that failure mode.
+
 ## Architecture, in one pass
 
 - **Provider interfaces everywhere** (`agent/research/providers.py`,
