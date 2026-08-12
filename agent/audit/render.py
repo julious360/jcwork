@@ -107,8 +107,14 @@ def _findings_section(report: AuditReport) -> list[str]:
     cur = report.currency
     lines: list[str] = []
 
+    # Sections 3 and 4 only render when they have rows, so the numbering is assigned
+    # as sections are emitted rather than written into the titles. A client-facing
+    # report that skips from "2." to "4." undercuts the credibility of everything on
+    # the page.
+    section = _Counter()
+
     lines += _finding_block(
-        "1. Spend to stop",
+        f"{section.next()}. Spend to stop",
         report.wasted,
         cur,
         "Each of these has spent past the sample-size floor, sits outside the "
@@ -120,7 +126,7 @@ def _findings_section(report: AuditReport) -> list[str]:
     )
 
     lines += _finding_block(
-        "2. Spend to add",
+        f"{section.next()}. Spend to add",
         report.under_scaled,
         cur,
         "These clear the scale benchmark on the *pessimistic* end of their interval "
@@ -132,7 +138,7 @@ def _findings_section(report: AuditReport) -> list[str]:
 
     if report.unverified:
         lines += _finding_block(
-            "3. Spend you cannot currently measure",
+            f"{section.next()}. Spend you cannot currently measure",
             report.unverified,
             cur,
             "Identity resolution on these ads is too weak to confirm or rule out "
@@ -145,7 +151,7 @@ def _findings_section(report: AuditReport) -> list[str]:
 
     if report.pending:
         lines += [
-            "## 4. Ads that look worse than they are",
+            f"## {section.next()}. Ads that look worse than they are",
             "",
             f"{len(report.pending)} ad{_s(len(report.pending))} fall inside the "
             "attribution lag: the spend is booked but the revenue has not finished "
@@ -252,6 +258,17 @@ def _limits(report: AuditReport) -> list[str]:
 
 
 # ── Formatting ────────────────────────────────────────────────────────────────
+
+
+class _Counter:
+    """Hands out consecutive section numbers as sections are actually emitted."""
+
+    def __init__(self) -> None:
+        self._n = 0
+
+    def next(self) -> int:
+        self._n += 1
+        return self._n
 
 
 def _money(value: Decimal, currency: str) -> str:

@@ -9,6 +9,7 @@ could make it larger than the evidence supports is tested here.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from decimal import Decimal
 
@@ -230,6 +231,20 @@ def test_rendered_report_flags_unmeasurable_spend_as_a_limit(thresholds) -> None
 
     assert "Spend you cannot currently measure" in markdown
     assert "lower bound on what is knowable" in markdown
+
+
+def test_numbered_sections_stay_contiguous_when_some_are_omitted(
+    clear_loser, clear_winner, immature_window, thresholds
+) -> None:
+    """Two of the four sections only render when they have rows.
+
+    A report handed to a prospect that skips from "2." to "4." reads as careless and
+    costs more credibility than the omitted section was worth.
+    """
+    markdown = render_markdown(_audit([clear_loser, clear_winner, immature_window], thresholds))
+
+    numbered = [line for line in markdown.splitlines() if re.match(r"^## \d+\. ", line)]
+    assert [int(re.match(r"^## (\d+)\. ", line).group(1)) for line in numbered] == [1, 2, 3]
 
 
 def test_currency_follows_the_campaign(clear_loser, thresholds) -> None:
