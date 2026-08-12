@@ -17,10 +17,68 @@
 import { chromium } from "playwright-core";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const CHROMIUM_PATH = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+/** Locate a Chromium/Chrome binary this session can launch. playwright-core (as
+ *  opposed to the full `playwright` package) never downloads or manages a browser
+ *  itself — it only drives one you point it at via executablePath — so this has to
+ *  find one. Checked in order: an explicit override, this original environment's
+ *  preinstalled Chromium (kept first so nothing changes for sessions already using
+ *  it), then the common install locations for each OS. First one that exists wins.
+ *  This matters concretely: the original hardcoded path
+ *  (/opt/pw-browsers/chromium-1194/...) is specific to the cloud container this
+ *  toolkit was built in and does not exist on a downloaded copy run locally on
+ *  Windows/macOS — without this, every command would fail immediately with an
+ *  unhelpful "executable doesn't exist" error on first use outside that container. */
+function findChromium() {
+  const candidates = [
+    process.env.UIKIT_CHROMIUM_PATH,
+    "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    // Windows
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    // macOS
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    // Linux
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/snap/bin/chromium",
+  ].filter(Boolean);
+
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+
+  // Last resort: ask the OS to resolve a common binary name on PATH.
+  const onPath = ["google-chrome", "chromium", "chromium-browser", "chrome"];
+  const finder = process.platform === "win32" ? "where" : "which";
+  for (const name of onPath) {
+    try {
+      const found = execSync(`${finder} ${name}`, { stdio: ["ignore", "pipe", "ignore"] })
+        .toString()
+        .split(/\r?\n/)[0]
+        .trim();
+      if (found && existsSync(found)) return found;
+    } catch {
+      /* not found on PATH, try the next name */
+    }
+  }
+
+  throw new Error(
+    "No Chrome/Chromium binary found. Install Google Chrome or Chromium, or set " +
+      "UIKIT_CHROMIUM_PATH to its executable path."
+  );
+}
+
+export const CHROMIUM_PATH = findChromium();
 
 export const BREAKPOINTS = [
   { name: "390", width: 390, height: 844 },
