@@ -123,7 +123,7 @@ each message can reference something specific and true about that company.
 Write one post — LinkedIn, X, an industry Slack, wherever your buyers actually are —
 that shows the sample report and states the finding plainly:
 
-> Meta reported 818 conversions last month for this account. 371 could be traced to a
+> Meta reported 876 conversions last month for this account. 410 could be traced to a
 > payment. Here's the join that shows the difference, and what the 53% gap cost.
 
 This is not marketing. It is proof-of-work, and it makes the cold outreach in week two

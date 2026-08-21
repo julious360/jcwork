@@ -50,7 +50,7 @@ ask**, and **never attach anything on the first touch**.
 
 ### Cold email — first touch
 
-> Subject: 371 of 818
+> Subject: 410 of 876
 >
 > Hi {name} — I pulled {company} in the Meta Ad Library and you've had the
 > {specific creative} running since {month}, which usually means it's working.
