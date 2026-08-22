@@ -1,0 +1,13 @@
+# systemd timers beat cron on a VPS: Persistent=true replays a run the box missed
+# while it was down, and RandomizedDelaySec keeps every host off the same minute.
+[Unit]
+Description=Run the daily ads review at 08:00
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=jcwork-daily-review.service
+
+[Install]
+WantedBy=timers.target

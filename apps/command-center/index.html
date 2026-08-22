@@ -1,0 +1,397 @@
+<meta charset="utf-8">
+<title>Virtual Command Center</title>
+<style>
+  :root{
+    --paper:#F7F8FA; --card:#FFFFFF; --ink:#101828; --muted:#667085; --line:#E4E7EC;
+    --primary:#2E5BFF; --accent:#FFB020; --good:#0E9F6E; --bad:#E02424; --warn:#B54708;
+    --shadow:0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.05);
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Inter Tight",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#080B11; --card:#111723; --ink:#E8ECF3; --muted:#8B97A8; --line:#212B3A;
+      --primary:#6D8DFF; --accent:#FFC252; --good:#34D399; --bad:#F87171; --warn:#FBBF24;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#080B11; --card:#111723; --ink:#E8ECF3; --muted:#8B97A8; --line:#212B3A;
+    --primary:#6D8DFF; --accent:#FFC252; --good:#34D399; --bad:#F87171; --warn:#FBBF24;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+       font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:24px 20px 72px}
+  a{color:var(--primary)}
+
+  /* ── header ─────────────────────────────────────────── */
+  header{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;
+         padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .brandline{display:flex;align-items:center;gap:10px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 4px color-mix(in srgb,var(--good) 22%,transparent)}
+  h1{font-size:22px;margin:0;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin-top:2px}
+  .pills{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;
+        border:1px solid var(--line);background:var(--card);color:var(--muted);white-space:nowrap}
+  .pill.ok{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+  .pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}
+  .pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+  button.ghost{font:inherit;font-size:12px;padding:5px 11px;border-radius:8px;cursor:pointer;
+        border:1px solid var(--line);background:var(--card);color:var(--muted)}
+  button.ghost:hover{color:var(--ink);border-color:var(--primary)}
+
+  /* ── grid ───────────────────────────────────────────── */
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:20px;align-items:start}
+  .card{grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:14px;
+        padding:18px 18px 16px;box-shadow:var(--shadow);min-width:0}
+  .col4{grid-column:span 4} .col6{grid-column:span 6} .col8{grid-column:span 8}
+  @media (max-width:940px){.col4,.col6,.col8{grid-column:span 12}}
+  .card h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+           margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .card h2 .count{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:700}
+
+  /* ── kpis ───────────────────────────────────────────── */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+  .kpi{border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:transparent}
+  .kpi .label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .kpi .value{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:3px;letter-spacing:-.02em}
+  .kpi .sub{font-size:11px;color:var(--muted)}
+
+  /* ── lists ──────────────────────────────────────────── */
+  .row{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0;padding-bottom:0}
+  .row:first-of-type{padding-top:0}
+  .grow{flex:1;min-width:0}
+  .name{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+  .meta{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+  .status-dot{width:8px;height:8px;border-radius:50%;margin-top:7px;flex:none;background:var(--muted)}
+  .s-ok{background:var(--good)} .s-fail{background:var(--bad)}
+  .s-running{background:var(--primary)} .s-unknown{background:var(--muted);opacity:.5}
+  .empty{color:var(--muted);font-size:13px;padding:6px 0}
+
+  code,kbd{font-family:var(--mono);font-size:12px}
+  .cmd{display:flex;align-items:center;gap:8px;margin-top:7px;background:color-mix(in srgb,var(--primary) 8%,transparent);
+       border:1px solid color-mix(in srgb,var(--primary) 22%,var(--line));border-radius:8px;padding:5px 8px}
+  .cmd code{color:var(--primary);overflow-x:auto;white-space:nowrap;flex:1;scrollbar-width:none}
+  .cmd button{font:inherit;font-size:11px;border:0;background:transparent;color:var(--muted);cursor:pointer;padding:2px 4px}
+  .cmd button:hover{color:var(--primary)}
+  .tag{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+       padding:2px 7px;border-radius:5px;background:color-mix(in srgb,var(--accent) 24%,transparent);color:var(--ink)}
+  .tag.thin{background:color-mix(in srgb,var(--muted) 18%,transparent);color:var(--muted)}
+
+  .scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+     padding:0 10px 8px 0;font-weight:600;white-space:nowrap}
+  td{padding:8px 10px 8px 0;border-top:1px solid var(--line);vertical-align:top}
+  td.reason{min-width:220px}
+  .badge{font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--line);white-space:nowrap}
+  .b-executed,.b-verified{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+  .b-awaiting_approval{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}
+  .b-failed{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+
+  .bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:var(--line);margin:2px 0 12px}
+  .bar span{display:block}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+
+  .map{display:grid;gap:8px}
+  .node{border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .node.root{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 7%,transparent)}
+  .node .path{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .arm{display:flex;gap:8px;font-size:11px;color:var(--muted);margin-top:2px}
+
+  footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);
+         color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+         background:var(--ink);color:var(--paper);font-size:13px;padding:8px 14px;border-radius:8px;
+         transition:opacity .18s,transform .18s}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="brandline"><span class="dot" id="livedot"></span><h1>Virtual Command Center</h1></div>
+      <div class="sub" id="subline">loading…</div>
+    </div>
+    <div class="pills" id="pills">
+      <button class="ghost" id="theme">◐ theme</button>
+      <button class="ghost" id="refresh">↻ refresh</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="card col8">
+      <h2>System <span class="count" id="sys-env"></span></h2>
+      <div class="kpis" id="kpis"></div>
+    </section>
+
+    <section class="card col4">
+      <h2>Approval queue <span class="count" id="appr-count">0</span></h2>
+      <div id="approvals"></div>
+    </section>
+
+    <section class="card col8">
+      <h2>Decision ledger <span class="count" id="ledger-window"></span></h2>
+      <div id="ledger"></div>
+    </section>
+
+    <section class="card col4">
+      <h2>Routines <span class="count" id="routine-count">0</span></h2>
+      <div id="routines"></div>
+    </section>
+
+    <section class="card col8">
+      <h2>Skill triggers <span class="count" id="skill-count">0</span></h2>
+      <div id="skills"></div>
+    </section>
+
+    <section class="card col4">
+      <h2>Memory map</h2>
+      <div class="map" id="routers"></div>
+    </section>
+
+    <section class="card col6">
+      <h2>Content pipeline</h2>
+      <div id="content"></div>
+    </section>
+
+    <section class="card col6">
+      <h2>Operator commands</h2>
+      <div id="ops"></div>
+    </section>
+  </div>
+
+  <footer>
+    <span id="stamp"></span>
+    <span>ARMS · Applications · Routines · Memory · Skills</span>
+  </footer>
+</div>
+<div class="toast" id="toast">copied</div>
+
+<script>
+// Sample state: the dashboard must render before any routine has ever run, and it is
+// what you see when this page is opened without ./data/state.json beside it.
+const SAMPLE = {
+  generated_at: null, workspace: "~/jcwork", sample: true,
+  system: {environment:"development", dry_run:true, kill_switch:false, access_tier:"limited",
+    product:"Acme Studio", category:"project management software for creative agencies",
+    thresholds:{target_cpa:60,cpa_max:90,roas_min:1.2,roas_scale:2.5,exploration_pct:20,
+                check_interval_hours:6,approval_threshold:500},
+    git:{branch:"claude/agentic-os-arms-a661aq",commit:"—",dirty:false}},
+  routers:[{name:"claude.md",path:"CLAUDE.md",role:"root router"},
+    {name:"ads.md",path:".claude/routers/ads.md",role:"Ads Department"},
+    {name:"content.md",path:".claude/routers/content.md",role:"Content Department"},
+    {name:"finance.md",path:".claude/routers/finance.md",role:"Finance Department"},
+    {name:"ops.md",path:".claude/routers/ops.md",role:"Ops Department"}],
+  skills:[
+    {name:"ad-concept-brief",description:"Pain point → brand-safe Meta ad concept brief.",thick:true,
+     references:["brand-tokens.json","concept-brief.template.md"],command:'claude -p "/ad-concept-brief"'},
+    {name:"transcript-to-newsletter",description:"Transcript → newsletter (Markdown + HTML email).",thick:true,
+     references:["newsletter.template.html","voice.md"],command:'claude -p "/transcript-to-newsletter"'},
+    {name:"weekly-ads-review",description:"Economics + ledger → weekly review report.",thick:true,
+     references:["report.template.html"],command:'claude -p "/weekly-ads-review"'},
+    {name:"ship-check",description:"Run the CI gate locally before pushing.",thick:false,
+     references:[],command:'claude -p "/ship-check"'}],
+  routines:[
+    {name:"daily-ads-review",cadence:"daily 08:00",where:"local + cloud timer",status:"unknown",at:null,message:"never run on this host"},
+    {name:"weekly-newsletter",cadence:"Mon 07:00",where:"local + cloud timer",status:"unknown",at:null,message:"never run on this host"},
+    {name:"refresh-dashboard",cadence:"every 15 min",where:"local",status:"unknown",at:null,message:"never run on this host"}],
+  content:{transcripts:0,unprocessed:[],recent:[]},
+  ads:{available:false,reason:"sample data — run os/connectors/vcc_state.py"}
+};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = (v, d="—") => (v === null || v === undefined) ? d : v;
+
+function ago(iso){
+  if(!iso) return "never";
+  const s = (Date.now() - new Date(iso).getTime())/1000;
+  if(isNaN(s)) return "—";
+  if(s < 90) return "just now";
+  if(s < 5400) return Math.round(s/60) + "m ago";
+  if(s < 172800) return Math.round(s/3600) + "h ago";
+  return Math.round(s/86400) + "d ago";
+}
+
+function copyBtn(cmd){
+  return `<div class="cmd"><code>${esc(cmd)}</code>
+    <button data-copy="${esc(cmd)}" title="copy">copy</button></div>`;
+}
+
+function render(s, live){
+  const sys = s.system, th = sys.thresholds || {};
+
+  $("subline").textContent =
+    `${sys.product} · ${sys.git.branch}${sys.git.dirty ? " (dirty)" : ""} · ${live ? "live state" : "sample state"}`;
+  $("livedot").style.background = live ? "var(--good)" : "var(--muted)";
+  $("sys-env").textContent = sys.environment;
+
+  const pills = [
+    sys.dry_run ? ['ok','DRY RUN — no Meta writes'] : ['bad','LIVE WRITES ENABLED'],
+    sys.kill_switch ? ['bad','KILL SWITCH ON'] : ['ok','kill switch off'],
+    ['', `tier: ${sys.access_tier}`],
+  ].map(([c,t]) => `<span class="pill ${c}">${esc(t)}</span>`).join("");
+  $("pills").insertAdjacentHTML("afterbegin", pills);
+
+  $("kpis").innerHTML = [
+    ["Target CPA", `$${num(th.target_cpa)}`, `pause above $${num(th.cpa_max)}`],
+    ["ROAS floor", num(th.roas_min), `scale above ${num(th.roas_scale)}`],
+    ["Loop interval", `${num(th.check_interval_hours)}h`, "scheduler cadence"],
+    ["Exploration", `${num(th.exploration_pct)}%`, "min external-DNA spend"],
+    ["Approval gate", `$${num(th.approval_threshold)}`, "above this, a human releases it"],
+    ["Commit", esc((sys.git.commit||"—").split(" ")[0]), esc(sys.git.branch)],
+  ].map(([l,v,sub]) => `<div class="kpi"><div class="label">${l}</div>
+      <div class="value">${v}</div><div class="sub">${sub}</div></div>`).join("");
+
+  // Approvals
+  const ads = s.ads || {available:false, reason:"no data"};
+  const appr = ads.available ? (ads.approvals || []) : [];
+  $("appr-count").textContent = appr.length;
+  $("approvals").innerHTML = appr.length ? appr.map(a => `
+    <div class="row"><span class="status-dot s-fail"></span><div class="grow">
+      <div class="name">${esc(a.action)} · <span class="meta">${esc(a.ad_id || "—")}</span></div>
+      <div class="meta">${esc(a.reason)} · ${ago(a.at)}</div>
+      ${copyBtn(a.command)}
+    </div></div>`).join("")
+    : `<div class="empty">${ads.available ? "Nothing awaiting approval." : esc(ads.reason)}</div>`;
+
+  // Ledger
+  $("ledger-window").textContent = ads.available ? `last ${ads.window_days}d` : "";
+  if(!ads.available){
+    $("ledger").innerHTML = `<div class="empty">Ledger unavailable — ${esc(ads.reason)}<br>
+      Start the stores with <code>docker compose up -d &amp;&amp; adagent db migrate</code>,
+      then rerun the state connector.</div>`;
+  } else {
+    const colors = {executed:"var(--good)",verified:"var(--good)",proposed:"var(--primary)",
+      awaiting_approval:"var(--warn)",approved:"var(--accent)",failed:"var(--bad)",skipped:"var(--muted)"};
+    const entries = Object.entries(ads.by_status || {});
+    const total = entries.reduce((n,[,v]) => n+v, 0) || 1;
+    const bar = entries.map(([k,v]) =>
+      `<span style="width:${(v/total*100).toFixed(1)}%;background:${colors[k]||"var(--muted)"}"></span>`).join("");
+    const legend = entries.map(([k,v]) =>
+      `<span><i style="background:${colors[k]||"var(--muted)"}"></i>${esc(k)} ${v}</span>`).join("");
+    const rows = (ads.recent||[]).map(r => `<tr>
+        <td>${r.id}</td><td>${esc(r.action)}</td>
+        <td><span class="badge b-${esc(r.status)}">${esc(r.status)}</span></td>
+        <td>${esc(r.ad_id||"—")}</td><td class="reason">${esc(r.reason)}</td>
+        <td>${ago(r.at)}</td></tr>`).join("");
+    $("ledger").innerHTML = `<div class="bar">${bar}</div><div class="legend">${legend}</div>
+      <div class="scroll" style="margin-top:14px"><table>
+        <tr><th>ID</th><th>Action</th><th>Status</th><th>Ad</th><th>Reason</th><th>When</th></tr>
+        ${rows || '<tr><td colspan="6" class="empty">No decisions recorded yet.</td></tr>'}
+      </table></div>`;
+  }
+
+  // Routines
+  const rs = s.routines || [];
+  $("routine-count").textContent = `${rs.filter(r => r.status === "ok").length}/${rs.length} ok`;
+  $("routines").innerHTML = rs.map(r => `
+    <div class="row"><span class="status-dot s-${esc(r.status)}"></span><div class="grow">
+      <div class="name">${esc(r.name)}</div>
+      <div class="meta">${esc(r.cadence)} · ${esc(r.where)} · ${ago(r.at)}${r.host ? " · " + esc(r.host) : ""}</div>
+      <div class="meta">${esc(r.message || "")}</div>
+    </div></div>`).join("");
+
+  // Skills
+  const sk = s.skills || [];
+  $("skill-count").textContent = sk.length;
+  $("skills").innerHTML = sk.map(k => `
+    <div class="row"><div class="grow">
+      <div class="name">${esc(k.name)}
+        <span class="tag ${k.thick ? "" : "thin"}">${k.thick ? "thick" : "thin"}</span></div>
+      <div class="meta">${esc(k.description)}</div>
+      ${k.references && k.references.length ? `<div class="meta">refs: ${k.references.map(esc).join(", ")}</div>` : ""}
+      ${copyBtn(k.command)}
+    </div></div>`).join("");
+
+  // Memory map
+  $("routers").innerHTML = (s.routers||[]).map(r => `
+    <div class="node ${r.name === "claude.md" ? "root" : ""}">
+      <div class="name">${esc(r.name)}</div>
+      <div class="path">${esc(r.path)}</div>
+      <div class="arm">${esc(r.role)}</div>
+    </div>`).join("");
+
+  // Content
+  const c = s.content || {transcripts:0, unprocessed:[], recent:[]};
+  $("content").innerHTML = `
+    <div class="kpis" style="margin-bottom:12px">
+      <div class="kpi"><div class="label">Transcripts</div><div class="value">${c.transcripts}</div>
+        <div class="sub">in memory/inbox</div></div>
+      <div class="kpi"><div class="label">Unprocessed</div><div class="value">${(c.unprocessed||[]).length}</div>
+        <div class="sub">awaiting the newsletter skill</div></div>
+      <div class="kpi"><div class="label">Published</div><div class="value">${(c.recent||[]).length}</div>
+        <div class="sub">recent issues</div></div>
+    </div>
+    ${(c.unprocessed||[]).map(f => `<div class="row"><span class="status-dot s-running"></span>
+        <div class="grow"><div class="name">${esc(f)}</div>
+        ${copyBtn('claude -p "/transcript-to-newsletter memory/inbox/transcripts/' + f + '"')}</div></div>`).join("")}
+    ${(c.recent||[]).map(r => `<div class="row"><span class="status-dot s-ok"></span>
+        <div class="grow"><div class="name">${esc(r.name)}</div>
+        <div class="meta">published ${ago(r.at)}</div></div></div>`).join("")}
+    ${!(c.unprocessed||[]).length && !(c.recent||[]).length
+      ? `<div class="empty">Inbox empty. Capture one:</div>
+         ${copyBtn("python os/connectors/youtube_transcript.py <youtube-url>")}` : ""}`;
+
+  // Operator commands
+  $("ops").innerHTML = [
+    ["Refresh this dashboard", "python os/connectors/vcc_state.py"],
+    ["Dry-run the decision loop", "adagent loop --dry-run"],
+    ["Read the ledger", "adagent actions --limit 20"],
+    ["Unit economics, 14 days", "adagent economics --days 14"],
+    ["Integration health", "adagent doctor"],
+    ["Freeze all writes", "sed -i 's/^kill_switch: false/kill_switch: true/' agent/config/thresholds.yaml"],
+  ].map(([label, cmd]) => `<div class="row"><div class="grow">
+      <div class="name">${esc(label)}</div>${copyBtn(cmd)}</div></div>`).join("");
+
+  $("stamp").textContent = s.generated_at
+    ? `state generated ${ago(s.generated_at)} · ${s.workspace}`
+    : "no state.json found — showing sample data";
+}
+
+async function load(){
+  let state = SAMPLE, live = false;
+  try{
+    const res = await fetch("./data/state.json", {cache:"no-store"});
+    if(res.ok){ state = await res.json(); live = true; }
+  }catch(e){ /* file:// or artifact: fall through to SAMPLE */ }
+  document.getElementById("pills").querySelectorAll(".pill").forEach(p => p.remove());
+  render(state, live);
+}
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest("[data-copy]");
+  if(btn){
+    try{ await navigator.clipboard.writeText(btn.dataset.copy); }
+    catch(err){
+      const ta = document.createElement("textarea");
+      ta.value = btn.dataset.copy; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand("copy"); }catch(_){}
+      ta.remove();
+    }
+    const t = $("toast"); t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 1100);
+  }
+  if(e.target.id === "refresh") load();
+  if(e.target.id === "theme"){
+    const root = document.documentElement;
+    const dark = root.getAttribute("data-theme") === "dark" ||
+      (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme:dark)").matches);
+    root.setAttribute("data-theme", dark ? "light" : "dark");
+    try{ localStorage.setItem("vcc-theme", root.getAttribute("data-theme")); }catch(_){}
+  }
+});
+
+try{
+  const saved = localStorage.getItem("vcc-theme");
+  if(saved) document.documentElement.setAttribute("data-theme", saved);
+}catch(_){}
+
+load();
+setInterval(load, 60000);   // the connector rewrites state.json every 15 min
+</script>

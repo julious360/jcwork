@@ -1,0 +1,23 @@
+// Paste into the jcwork-memory folder's Ignore Patterns on BOTH devices.
+// Order matters: (?d) lets Syncthing delete these when cleaning a directory.
+
+// Per-host, noisy, or rotated
+(?d)*.log
+(?d)*.tmp
+(?d)*.partial
+
+// Never sync credentials or per-host runtime state
+.env
+.env.*
+*.pem
+*.key
+.venv/
+__pycache__/
+(?d)*.pyc
+
+// OS litter
+(?d).DS_Store
+(?d)Thumbs.db
+
+// Generated dashboard state — each host rebuilds its own from synced inputs
+data/state.json

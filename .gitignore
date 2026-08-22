@@ -16,3 +16,19 @@ artifacts/
 *.png
 !tests/**/*.png
 .coverage
+
+# ── Agentic OS (ARMS) ─────────────────────────────────────────────────────────
+# Routine logs and per-host status are machine state, not source.
+memory/logs/*
+!memory/logs/.gitkeep
+# Captured input and generated output stay local (they sync via Syncthing, not git).
+# Directories are re-included so the tree structure survives a clone.
+memory/inbox/**
+memory/outbox/**
+!memory/inbox/**/
+!memory/outbox/**/
+!memory/inbox/**/.gitkeep
+!memory/outbox/**/.gitkeep
+# Rebuilt by os/connectors/vcc_state.py on every host.
+apps/command-center/data/state.json
+*.sync-conflict-*

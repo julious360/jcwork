@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the newsletter routine Monday 07:00
+
+[Timer]
+OnCalendar=Mon *-*-* 07:00:00
+Persistent=true
+RandomizedDelaySec=300
+Unit=jcwork-newsletter.service
+
+[Install]
+WantedBy=timers.target

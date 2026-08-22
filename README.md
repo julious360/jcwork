@@ -289,3 +289,62 @@ Set `dry_run=false` on one low-spend campaign. Keep `max_actions_per_day` low an
 - **Whether the thresholds are right for your account.** Tier 4 is the only answer.
 - **Creative quality.** The validator checks palette, spec, tone, and claims. Whether
   an ad *works* is a question only spend answers.
+
+---
+
+## The workspace around the agent (ARMS)
+
+The agent is the product; the workspace is how you operate it. `claude.md` at the repo
+root is the entry point — a router, not documentation. It maps four departments to
+sub-routers, and each sub-router names the skills and files that department needs, so
+an agent reaches the right context in one hop instead of searching the tree.
+
+```
+CLAUDE.md                     root router — departments, skills, routines, invariants
+.claude/routers/              ads · content · finance · ops
+.claude/skills/               SOPs, each with the reference files it needs
+os/routines/local/            cron: daily review, weekly newsletter, dashboard refresh
+os/routines/cloud/            systemd timers on a VPS + Syncthing for shared memory
+os/connectors/                vcc_state.py (dashboard state) · youtube_transcript.py
+apps/command-center/          the Virtual Command Center dashboard
+memory/                       inbox (captured) · outbox (published) · logs (routine state)
+```
+
+**Memory.** Router files, not folders. `claude.md` → one sub-router → the files it
+names. Anything not listed in a sub-router is deliberately out of working memory.
+
+**Skills.** Four SOPs in `.claude/skills/`, three of them "thick" — they ship the
+reference files that make output correct on the first pass rather than describing them
+in prose: brand tokens for ad concepts, an inlined-CSS email shell and a voice guide
+for newsletters, a self-contained HTML report shell for the weekly review. Each runs
+headless:
+
+```bash
+claude -p "/weekly-ads-review" --allowedTools "Bash(adagent:*),Read,Write"
+claude -p "/transcript-to-newsletter memory/inbox/transcripts/2026-08-21-ops.md"
+```
+
+**Routines.** The same scripts run from cron locally and from systemd timers in the
+cloud; only the scheduler differs. Every routine takes an `flock` lock, writes
+`memory/logs/<name>.status.json`, and reports failure through an ERR trap. Timers use
+`Persistent=true`, so a run missed while the box was down is replayed — the property
+cron does not have.
+
+```bash
+crontab os/routines/local/crontab.example          # local
+cp os/routines/cloud/systemd/* /etc/systemd/system/ # cloud
+```
+
+Local and cloud share one `memory/` tree over Syncthing
+(`os/routines/cloud/syncthing/`), so routine health from the VPS shows up on the local
+dashboard with no API between them — the sync is the transport.
+
+**Applications.** `apps/command-center/index.html` is a single self-contained page:
+approval queue, decision ledger, routine health, skill triggers with copy-to-clipboard
+headless commands, the memory map, and the content pipeline. It reads exactly one
+file, `apps/command-center/data/state.json`, built by `os/connectors/vcc_state.py`
+(stdlib only, every source optional — it renders when the database is down).
+
+```bash
+./apps/command-center/serve.sh     # → http://localhost:8787/apps/command-center/
+```

@@ -1,0 +1,21 @@
+# Local routines — install with:  crontab os/routines/local/crontab.example
+# Cron runs with a minimal environment: absolute paths, and PATH set explicitly.
+# `claude` must be on that PATH, or export CLAUDE_BIN=/full/path/to/claude below.
+
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin
+JCWORK=/home/user/jcwork
+# CLAUDE_BIN=/opt/homebrew/bin/claude
+
+# Daily ads review — 08:00. Mondays it also writes the weekly review.
+0 8 * * *    cd $JCWORK && ./os/routines/local/daily-ads-review.sh
+
+# Weekly newsletter — Monday 07:00, before the review lands.
+0 7 * * 1    cd $JCWORK && ./os/routines/local/weekly-newsletter.sh
+
+# Dashboard state — every 15 minutes while the machine is awake.
+*/15 * * * * cd $JCWORK && ./os/routines/local/refresh-dashboard.sh
+
+# macOS note: cron does not wake a sleeping Mac. For a laptop, prefer launchd with
+# `StartCalendarInterval` (fires on wake) or move these to the cloud timers in
+# os/routines/cloud/systemd/.

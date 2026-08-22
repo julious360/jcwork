@@ -1,0 +1,26 @@
+# Continuous job worker. Install to /etc/systemd/system/ and:
+#   systemctl daemon-reload && systemctl enable --now adagent-worker
+[Unit]
+Description=adagent job worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agent
+WorkingDirectory=/srv/jcwork
+EnvironmentFile=/srv/jcwork/.env
+ExecStart=/srv/jcwork/.venv/bin/adagent worker
+Restart=always
+RestartSec=10
+# Hardening: the worker needs the repo and nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/jcwork/memory
+StandardOutput=append:/srv/jcwork/memory/logs/worker.log
+StandardError=append:/srv/jcwork/memory/logs/worker.log
+
+[Install]
+WantedBy=multi-user.target

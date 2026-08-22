@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly transcript -> newsletter run
+
+[Service]
+Type=oneshot
+User=agent
+WorkingDirectory=/srv/jcwork
+EnvironmentFile=/srv/jcwork/.env
+Environment=CLAUDE_BIN=/usr/local/bin/claude
+ExecStart=/srv/jcwork/os/routines/local/weekly-newsletter.sh
+TimeoutStartSec=3600
