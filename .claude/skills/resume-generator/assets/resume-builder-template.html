@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume Builder</title>
+<style>
+  :root {
+    --accent: #2b4c7e;
+    --ink: #1a1a1a;
+    --muted: #5b5b5b;
+    --line: #d9d9d9;
+    --paper: #ffffff;
+    --panel: #f4f5f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--panel);
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    min-height: 100vh;
+  }
+  .editor {
+    background: var(--paper);
+    border-right: 1px solid var(--line);
+    padding: 24px;
+    overflow-y: auto;
+    max-height: 100vh;
+    position: sticky;
+    top: 0;
+  }
+  .editor h1 { font-size: 18px; margin: 0 0 16px; }
+  .theme-switcher { display: flex; gap: 8px; margin-bottom: 20px; }
+  .theme-switcher button {
+    flex: 1; padding: 8px; border: 1px solid var(--line); background: #fff;
+    border-radius: 6px; cursor: pointer; font-size: 12px;
+  }
+  .theme-switcher button.active { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  fieldset { border: none; padding: 0; margin: 0 0 22px; }
+  legend { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 8px; padding: 0; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 3px; }
+  input[type=text], input[type=email], input[type=tel], textarea {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px;
+    font-size: 13px; font-family: inherit; resize: vertical;
+  }
+  textarea { min-height: 60px; }
+  .entry { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fafafa; }
+  .entry-row { display: flex; gap: 8px; }
+  .entry-row > div { flex: 1; }
+  .entry-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .checkbox-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .checkbox-row input { width: auto; }
+  .remove-btn {
+    background: none; border: none; color: #a33; font-size: 12px; cursor: pointer; padding: 2px;
+  }
+  .add-btn {
+    width: 100%; padding: 9px; border: 1px dashed var(--accent); background: #fff; color: var(--accent);
+    border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .actions { position: sticky; bottom: 0; background: var(--paper); padding-top: 12px; border-top: 1px solid var(--line); display: flex; gap: 8px; }
+  .actions button {
+    flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; font-size: 13px;
+  }
+  #print-btn { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  #clear-btn { background: #fff; color: #a33; }
+
+  .preview-pane { padding: 32px; display: flex; justify-content: center; }
+  .resume {
+    background: var(--paper);
+    width: 8.5in;
+    min-height: 11in;
+    padding: 0.75in;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  }
+  .resume header.r-head { margin-bottom: 18px; }
+  .resume .r-name { font-size: 26px; font-weight: 700; margin: 0 0 2px; }
+  .resume .r-title { font-size: 14px; color: var(--muted); margin: 0 0 8px; }
+  .resume .r-contact { font-size: 11.5px; color: var(--muted); }
+  .resume .r-contact span:not(:last-child)::after { content: " \00b7 "; }
+  .resume section { margin-bottom: 16px; }
+  .resume h2.r-h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+    border-bottom: 1px solid var(--line); padding-bottom: 4px; margin: 0 0 8px; color: var(--accent);
+  }
+  .resume .r-summary { font-size: 12.5px; line-height: 1.5; }
+  .resume article.r-item { margin-bottom: 10px; }
+  .resume .r-item-head { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  .resume .r-item-sub { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); font-style: italic; margin-bottom: 4px; }
+  .resume ul.r-bullets { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.5; }
+  .resume .r-skills { font-size: 12px; line-height: 1.6; }
+
+  /* Theme: classic (serif, traditional) */
+  .resume.classic { font-family: Georgia, "Times New Roman", serif; }
+  .resume.classic .r-name { color: var(--ink); }
+  .resume.classic h2.r-h2 { color: var(--ink); border-bottom: 2px solid var(--ink); }
+
+  /* Theme: modern (sans, accent bar) */
+  .resume.modern { font-family: "Segoe UI", Helvetica, Arial, sans-serif; }
+  .resume.modern header.r-head { border-left: 5px solid var(--accent); padding-left: 14px; }
+  .resume.modern h2.r-h2 { border-bottom: none; background: #eef2f8; padding: 4px 8px; border-radius: 3px; }
+
+  /* Theme: minimal (tight, monochrome, no rules) */
+  .resume.minimal { font-family: "Helvetica Neue", Arial, sans-serif; }
+  .resume.minimal h2.r-h2 { border-bottom: none; color: var(--muted); font-weight: 700; }
+  .resume.minimal .r-name { font-weight: 800; letter-spacing: -.01em; }
+
+  @media print {
+    body { background: #fff; }
+    .editor, .actions { display: none !important; }
+    .app { display: block; }
+    .preview-pane { padding: 0; }
+    .resume { box-shadow: none; width: auto; min-height: 0; padding: 0; }
+    @page { size: letter; margin: 0.6in; }
+  }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .editor { position: static; max-height: none; }
+    .resume { width: 100%; padding: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="editor">
+    <h1>Resume Builder</h1>
+    <div class="theme-switcher" id="theme-switcher">
+      <button data-theme="classic" class="active">Classic</button>
+      <button data-theme="modern">Modern</button>
+      <button data-theme="minimal">Minimal</button>
+    </div>
+
+    <form id="resume-form" autocomplete="off">
+      <fieldset>
+        <legend>Personal Info</legend>
+        <label for="fullName">Full name</label>
+        <input type="text" id="fullName" placeholder="Jordan Rivera">
+        <label for="jobTitle">Professional title</label>
+        <input type="text" id="jobTitle" placeholder="Product Designer">
+        <div class="entry-row">
+          <div><label for="email">Email</label><input type="email" id="email" placeholder="jordan@email.com"></div>
+          <div><label for="phone">Phone</label><input type="tel" id="phone" placeholder="(555) 123-4567"></div>
+        </div>
+        <div class="entry-row">
+          <div><label for="location">Location</label><input type="text" id="location" placeholder="Austin, TX"></div>
+          <div><label for="website">Website / LinkedIn</label><input type="text" id="website" placeholder="linkedin.com/in/jordan"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Summary</legend>
+        <textarea id="summary" placeholder="2-3 sentence professional summary..."></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>Experience</legend>
+        <div id="experience-list"></div>
+        <button type="button" class="add-btn" id="add-experience">+ Add Experience</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Education</legend>
+        <div id="education-list"></div>
+        <button type="button" class="add-btn" id="add-education">+ Add Education</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Skills</legend>
+        <label for="skills">Comma-separated</label>
+        <input type="text" id="skills" placeholder="Figma, TypeScript, User Research, SQL">
+      </fieldset>
+
+      <fieldset>
+        <legend>Projects / Certifications <span style="font-weight:400;text-transform:none;">(optional)</span></legend>
+        <div id="projects-list"></div>
+        <button type="button" class="add-btn" id="add-project">+ Add Project</button>
+      </fieldset>
+    </form>
+
+    <div class="actions">
+      <button type="button" id="print-btn">Print / Save as PDF</button>
+      <button type="button" id="clear-btn">Clear All</button>
+    </div>
+  </aside>
+
+  <main class="preview-pane">
+    <div class="resume classic" id="resume"></div>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var STORAGE_KEY = "resumeBuilder.v1";
+
+  var defaultState = {
+    theme: "classic",
+    personal: { fullName: "", jobTitle: "", email: "", phone: "", location: "", website: "" },
+    summary: "",
+    experience: [],
+    education: [],
+    skills: "",
+    projects: []
+  };
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(defaultState));
+      var parsed = JSON.parse(raw);
+      return Object.assign(JSON.parse(JSON.stringify(defaultState)), parsed);
+    } catch (e) {
+      return JSON.parse(JSON.stringify(defaultState));
+    }
+  }
+
+  var state = loadState();
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable, ignore */ }
+  }
+
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+
+  function escapeHtml(str) {
+    return String(str || "").replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  // ---- Editor: Experience entries ----
+  var expList = document.getElementById("experience-list");
+  var eduList = document.getElementById("education-list");
+  var projList = document.getElementById("projects-list");
+
+  function renderExperienceForm() {
+    expList.innerHTML = "";
+    state.experience.forEach(function (item) {
+      var el = document.createElement("div");
+      el.className = "entry";
+      el.innerHTML =
+        '<div class="entry-row">' +
+          '<div><label>Company</label><input type="text" data-field="company" value="' + escapeHtml(item.company) + '"></div>' +
+          '<div><label>Role</label><input type="text" data-field="role" value="' + escapeHtml(item.role) + '"></div>' +
+        '</div>' +
+        '<div class="entry-row">' +
+          '<div><label>Start</label><input type="text" data-field="start" placeholder="Jan 2022" value="' + escapeHtml(item.start) + '"></div>' +
+          '<div><label>End</label><input type="text" data-field="end" placeholder="Present" value="' + escapeHtml(item.end) + '"></div>' +
+        '</div>' +
+        '<label>Achievements (one per line)</label>' +
+        '<textarea data-field="bullets">' + escapeHtml(item.bullets) + '</textarea>' +
+        '<div class="entry-footer"><span></span><button type="button" class="remove-btn" data-remove>Remove</button></div>';
+
+      el.querySelectorAll("[data-field]").forEach(function (input) {
+        input.addEventListener("input", function () {
+          item[input.dataset.field] = input.value;
+          saveState();
+          renderResume();
+        });
+      });
+      el.querySelector("[data-remove]").addEventListener("click", function () {
+        state.experience = state.experience.filter(function (x) { return x.id !== item.id; });
+        saveState();
+        renderExperienceForm();
+        renderResume();
+      });
+      expList.appendChild(el);
+    });
+  }
+
+  function renderEducationForm() {
+    eduList.innerHTML = "";
+    state.education.forEach(function (item) {
+      var el = document.createElement("div");
+      el.className = "entry";
+      el.innerHTML =
+        '<div class="entry-row">' +
+          '<div><label>School</label><input type="text" data-field="school" value="' + escapeHtml(item.school) + '"></div>' +
+          '<div><label>Degree</label><input type="text" data-field="degree" value="' + escapeHtml(item.degree) + '"></div>' +
+        '</div>' +
+        '<div class="entry-row">' +
+          '<div><label>Start</label><input type="text" data-field="start" value="' + escapeHtml(item.start) + '"></div>' +
+          '<div><label>End</label><input type="text" data-field="end" value="' + escapeHtml(item.end) + '"></div>' +
+        '</div>' +
+        '<div class="entry-footer"><span></span><button type="button" class="remove-btn" data-remove>Remove</button></div>';
+
+      el.querySelectorAll("[data-field]").forEach(function (input) {
+        input.addEventListener("input", function () {
+          item[input.dataset.field] = input.value;
+          saveState();
+          renderResume();
+        });
+      });
+      el.querySelector("[data-remove]").addEventListener("click", function () {
+        state.education = state.education.filter(function (x) { return x.id !== item.id; });
+        saveState();
+        renderEducationForm();
+        renderResume();
+      });
+      eduList.appendChild(el);
+    });
+  }
+
+  function renderProjectsForm() {
+    projList.innerHTML = "";
+    state.projects.forEach(function (item) {
+      var el = document.createElement("div");
+      el.className = "entry";
+      el.innerHTML =
+        '<label>Name</label><input type="text" data-field="name" value="' + escapeHtml(item.name) + '">' +
+        '<label>Description</label><textarea data-field="description">' + escapeHtml(item.description) + '</textarea>' +
+        '<div class="entry-footer"><span></span><button type="button" class="remove-btn" data-remove>Remove</button></div>';
+
+      el.querySelectorAll("[data-field]").forEach(function (input) {
+        input.addEventListener("input", function () {
+          item[input.dataset.field] = input.value;
+          saveState();
+          renderResume();
+        });
+      });
+      el.querySelector("[data-remove]").addEventListener("click", function () {
+        state.projects = state.projects.filter(function (x) { return x.id !== item.id; });
+        saveState();
+        renderProjectsForm();
+        renderResume();
+      });
+      projList.appendChild(el);
+    });
+  }
+
+  document.getElementById("add-experience").addEventListener("click", function () {
+    state.experience.push({ id: uid(), company: "", role: "", start: "", end: "", bullets: "" });
+    saveState(); renderExperienceForm(); renderResume();
+  });
+  document.getElementById("add-education").addEventListener("click", function () {
+    state.education.push({ id: uid(), school: "", degree: "", start: "", end: "" });
+    saveState(); renderEducationForm(); renderResume();
+  });
+  document.getElementById("add-project").addEventListener("click", function () {
+    state.projects.push({ id: uid(), name: "", description: "" });
+    saveState(); renderProjectsForm(); renderResume();
+  });
+
+  // ---- Personal / summary / skills fields ----
+  var personalFieldIds = ["fullName", "jobTitle", "email", "phone", "location", "website"];
+  personalFieldIds.forEach(function (id) {
+    var input = document.getElementById(id);
+    input.value = state.personal[id] || "";
+    input.addEventListener("input", function () {
+      state.personal[id] = input.value;
+      saveState();
+      renderResume();
+    });
+  });
+
+  var summaryInput = document.getElementById("summary");
+  summaryInput.value = state.summary || "";
+  summaryInput.addEventListener("input", function () {
+    state.summary = summaryInput.value;
+    saveState();
+    renderResume();
+  });
+
+  var skillsInput = document.getElementById("skills");
+  skillsInput.value = state.skills || "";
+  skillsInput.addEventListener("input", function () {
+    state.skills = skillsInput.value;
+    saveState();
+    renderResume();
+  });
+
+  // ---- Theme switcher ----
+  document.getElementById("theme-switcher").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-theme]");
+    if (!btn) return;
+    state.theme = btn.dataset.theme;
+    saveState();
+    document.querySelectorAll(".theme-switcher button").forEach(function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+    renderResume();
+  });
+
+  // ---- Actions ----
+  document.getElementById("print-btn").addEventListener("click", function () { window.print(); });
+  document.getElementById("clear-btn").addEventListener("click", function () {
+    if (!confirm("Clear all resume data? This cannot be undone.")) return;
+    state = JSON.parse(JSON.stringify(defaultState));
+    saveState();
+    hydrateForm();
+    renderResume();
+  });
+
+  function hydrateForm() {
+    personalFieldIds.forEach(function (id) { document.getElementById(id).value = state.personal[id] || ""; });
+    summaryInput.value = state.summary || "";
+    skillsInput.value = state.skills || "";
+    document.querySelectorAll(".theme-switcher button").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.theme === state.theme);
+    });
+    renderExperienceForm();
+    renderEducationForm();
+    renderProjectsForm();
+  }
+
+  // ---- Resume preview render ----
+  function bulletsToList(bullets) {
+    var lines = String(bullets || "").split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+    if (!lines.length) return "";
+    return "<ul class=\"r-bullets\">" + lines.map(function (l) { return "<li>" + escapeHtml(l) + "</li>"; }).join("") + "</ul>";
+  }
+
+  function renderResume() {
+    var resumeEl = document.getElementById("resume");
+    resumeEl.className = "resume " + state.theme;
+
+    var p = state.personal;
+    var contactParts = [p.email, p.phone, p.location, p.website].filter(Boolean).map(escapeHtml);
+    var contactHtml = contactParts.map(function (c) { return "<span>" + c + "</span>"; }).join("");
+
+    var html = "";
+    html += '<header class="r-head">';
+    html += '<p class="r-name">' + (escapeHtml(p.fullName) || "Your Name") + '</p>';
+    if (p.jobTitle) html += '<p class="r-title">' + escapeHtml(p.jobTitle) + '</p>';
+    if (contactParts.length) html += '<p class="r-contact">' + contactHtml + '</p>';
+    html += '</header>';
+
+    if (state.summary) {
+      html += '<section><h2 class="r-h2">Summary</h2><p class="r-summary">' + escapeHtml(state.summary) + '</p></section>';
+    }
+
+    if (state.experience.length) {
+      html += '<section><h2 class="r-h2">Experience</h2>';
+      state.experience.forEach(function (item) {
+        if (!item.company && !item.role && !item.bullets) return;
+        html += '<article class="r-item">';
+        html += '<div class="r-item-head"><span>' + escapeHtml(item.role || "") + '</span><span>' + escapeHtml(item.start || "") + (item.start || item.end ? " – " : "") + escapeHtml(item.end || "") + '</span></div>';
+        if (item.company) html += '<div class="r-item-sub"><span>' + escapeHtml(item.company) + '</span><span></span></div>';
+        html += bulletsToList(item.bullets);
+        html += '</article>';
+      });
+      html += '</section>';
+    }
+
+    if (state.education.length) {
+      html += '<section><h2 class="r-h2">Education</h2>';
+      state.education.forEach(function (item) {
+        if (!item.school && !item.degree) return;
+        html += '<article class="r-item">';
+        html += '<div class="r-item-head"><span>' + escapeHtml(item.degree || "") + '</span><span>' + escapeHtml(item.start || "") + (item.start || item.end ? " – " : "") + escapeHtml(item.end || "") + '</span></div>';
+        if (item.school) html += '<div class="r-item-sub"><span>' + escapeHtml(item.school) + '</span><span></span></div>';
+        html += '</article>';
+      });
+      html += '</section>';
+    }
+
+    if (state.skills) {
+      html += '<section><h2 class="r-h2">Skills</h2><p class="r-skills">' + escapeHtml(state.skills) + '</p></section>';
+    }
+
+    if (state.projects.length) {
+      html += '<section><h2 class="r-h2">Projects &amp; Certifications</h2>';
+      state.projects.forEach(function (item) {
+        if (!item.name && !item.description) return;
+        html += '<article class="r-item">';
+        if (item.name) html += '<div class="r-item-head"><span>' + escapeHtml(item.name) + '</span><span></span></div>';
+        if (item.description) html += '<p class="r-summary">' + escapeHtml(item.description) + '</p>';
+        html += '</article>';
+      });
+      html += '</section>';
+    }
+
+    resumeEl.innerHTML = html;
+  }
+
+  hydrateForm();
+  renderResume();
+})();
+</script>
+</body>
+</html>
